@@ -276,12 +276,12 @@ try:
                 try:
                     export_file_path = filedialog.asksaveasfilename(defaultextension='.csv')
                     df2.to_csv(export_file_path, index=False, header=True)
-                    saveG.quit()
+                    saveG.destroy()
                 except:
                     text.delete('1.0', END)
                     text.insert(INSERT, 'ERROR: \nData not defined')
             def quitS():
-                ...
+                saveG.destroy()
 
             saveguiB = Button(saveG, text="Yes", command=saveAS).place(relx=0.01, rely=0.55, height=24, width=87)
             quitB = Button(saveG, text="No", command=quitS).place(relx=0.55, rely=0.55, height=24, width=87)
