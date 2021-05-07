@@ -60,11 +60,11 @@ config = ConfigParser()
 config.read('config.ini')
 try:
     config.add_section('main')
-    config.set('main', 'user', 'rel_ache')
-    config.set('main', 'password', '**ache@easydocs')
-    config.set('main', 'host', '186.237.57.96')
-    config.set('main', 'port', '5432')
-    config.set('main', 'database', 'prd_easydoc_ache')
+    config.set('main', 'user', '********')
+    config.set('main', 'password', '********')
+    config.set('main', 'host', '********')
+    config.set('main', 'port', '********')
+    config.set('main', 'database', '********')
 except:
     print('arquivo de config.ini criado com sucesso!')
 
