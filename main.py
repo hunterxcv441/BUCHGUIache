@@ -1,9 +1,7 @@
 from tkinter import *
 from tkinter import ttk
-from tkinter.scrolledtext import ScrolledText
 from tkinter import filedialog
 import psycopg2
-import csv
 import pandas as pd
 import re
 from configparser import ConfigParser
@@ -48,8 +46,9 @@ selecct = ("""select distinct
                                                 order by right(a.metadata_json ->> '20',4) || substring(a.metadata_json ->> '20',4,2) || left(a.metadata_json ->> '20',2)""")
 
 
-
 config5 = {'select': selecct}
+
+pd.options.display.max_seq_items = None
 
 with open('config.json', 'r') as f:
     config5 = json.load(f)
@@ -75,8 +74,6 @@ hostDB = str(config.get('main', 'host'))
 portDB = str(config.get('main', 'port'))
 database = str(config.get('main', 'database'))
 
-
-
 with open('config.ini', 'w') as f:
     config.write(f)
 
@@ -89,7 +86,7 @@ cursor = connection.cursor()
 
 try:
     root = Tk()
-    root.geometry("920x581+882+90")
+    root.geometry("928x581+882+90")
     root.minsize(120, 1)
     root.maxsize(1924, 1061)
     root.resizable(1, 1)
@@ -101,8 +98,6 @@ try:
 
     my_frame1 = Frame(my_notebook, width=500, height=500)
     my_frame2 = Frame(my_notebook, width=500, height=500)
-
-
 
     my_frame1.pack(fill="both", expand=1)
     my_frame2.pack(fill="both", expand=1)
@@ -124,8 +119,7 @@ try:
     ScrollBar.config(command=text.yview)
     text.config(yscrollcommand=ScrollBar.set)
     ScrollBar.pack(side=RIGHT, fill=Y)
-
-    text.place(relx=0.001, rely=0.001, height=398, width=887)
+    text.place(relx=0.001, rely=0.001, height=398, width=890)
 
     dataF = Entry(my_frame1)
     dataF.place(relx=0.710, rely=0.79, relheight=0.041, relwidth=0.148)
@@ -249,7 +243,10 @@ try:
                         dataFormatada1, dataFormatada2)
                 df = pd.read_sql(postgreSQL_select_Query, connection)
 
-                tratada = config1.get('Select') % (dataFormatada1, dataFormatada2)
+
+
+
+                tratada = config.get('Select') % (dataFormatada1, dataFormatada2)
 
 
             except:
@@ -258,20 +255,40 @@ try:
             ######################
             # filtro by date
             func = df[df.emissao.between(start_date, end_date)]
-           ## func = df['emissao']
-
             # pritando no textbox
             text.delete('1.0', END)
             text.insert(INSERT, func)
             text.insert(INSERT, '\nData Inicial:'+str(dataFormatada1)+'\nData Final:'+str(dataFormatada2)+'\n')
 
-        def salvardiretorio():
-            try:
-                export_file_path = filedialog.asksaveasfilename(defaultextension='.csv')
-                df.to_csv(export_file_path, index=False, header=True)
-            except:
-                text.delete('1.0', END)
-                text.insert(INSERT, 'ERROR: \nData not defined')
+        def saveGUI2():
+            saveG = Tk()
+            saveG.geometry("250x80+1200+210")
+            saveG.minsize(120, 1)
+            saveG.maxsize(200, 200)
+            saveG.resizable(0, 0)
+            saveG.title("Save")
+            saveG.configure(background="#d9d9d9")
+
+            saveLabel = Label(saveG, text='Exportar para CSV')
+            saveLabel.place(relx=0.25, rely=0.1)
+
+            def saveAS():
+                try:
+                    export_file_path = filedialog.asksaveasfilename(defaultextension='.csv')
+                    df2.to_csv(export_file_path, index=False, header=True)
+                    saveG.quit()
+                except:
+                    text.delete('1.0', END)
+                    text.insert(INSERT, 'ERROR: \nData not defined')
+            def quitS():
+                ...
+
+            saveguiB = Button(saveG, text="Yes", command=saveAS).place(relx=0.01, rely=0.55, height=24, width=87)
+            quitB = Button(saveG, text="No", command=quitS).place(relx=0.55, rely=0.55, height=24, width=87)
+
+            saveG.mainloop()
+
+
         def selectsaves():
             config5['select'] = selecttext.get('1.0', END)
             with open('config.json', 'w') as f:
@@ -292,15 +309,71 @@ try:
             with open('config.ini', 'w') as f:
                 config.write(f)
         def select1():
+            global df2
             tratada2 = config5.get('select')
 
-            df = pd.read_sql(tratada2, connection)
-            selectsave1 = df
-            ## func = df['emissao']
+            df2 = pd.read_sql(tratada2, connection)
+            selectsave1 = df2
 
-            # pritando no textbox
+            saveGUI2()
+
+
             text.delete('1.0', END)
             text.insert(INSERT, selectsave1)
+
+
+        def testselect():
+
+            datx = """select distinct
+                                                   a.metadata_json ->> '31' as cnpj,
+                                                   a.metadata_json ->> '12' as nota,
+                                                   a.metadata_json ->> '13' as serie,
+                                                   CASE
+                                                       WHEN (a.metadata_json ->> '11'::text) = '1'::text THEN 'DISPONIVEL'::text
+                                                       WHEN (a.metadata_json ->> '11'::text) = '2'::text THEN 'NÃO DISPONIVEL'::text
+                                                       ELSE ''::text
+                                                   END AS "STATUS DIGITALIZACAO",
+                                                   CASE
+                                                       WHEN (a.metadata_json ->> '10'::text) = '3'::text THEN 'DISPONIVEL'::text
+                                                       WHEN (a.metadata_json ->> '10'::text) = '4'::text THEN 'NÃO DISPONIVEL'::text
+                                                       ELSE ''::text
+                                                   END AS "STATUS INTEGRACAO",
+                                                   a.metadata_json ->> '20' as emissao,
+                                                   a.metadata_json ->> '17' as processamento,
+                                                   a.metadata_json ->> '45' as transportadora,
+                                                   a.metadata_json ->> '74' as protocolo,
+                                                   a.metadata_json ->> '75' as caixa,
+                                                   a.metadata_json ->> '78' as local,
+                                                   a.metadata_json ->> '79' AS cod_origem,
+                                                   CASE
+                                                       WHEN (a.metadata_json ->> '79'::text) = '17'::text THEN 'ACHE'::text
+                                                       WHEN (a.metadata_json ->> '79'::text) = '18'::text THEN 'ATLAS'::text
+                                                       WHEN (a.metadata_json ->> '79'::text) = '19'::text THEN 'EXPRESSO JUNDIAI'::text
+                                                       WHEN (a.metadata_json ->> '79'::text) = '22'::text THEN 'ACHE LEGADO'::text
+                                                       WHEN (a.metadata_json ->> '79'::text) = '25'::text THEN 'RV IMOLA'::text
+                                                       WHEN (a.metadata_json ->> '79'::text) = '26'::text THEN 'SOLISTICA'::text
+                                                       ELSE ''::text
+                                                   END AS "INDEXADO POR",
+                                                   right(a.metadata_json ->> '20',4) || substring(a.metadata_json ->> '20',4,2) || left(a.metadata_json ->> '20',2) as "ORDEM"   -- emissão
+                                            from document a
+                                            where a.document_type_id = 3
+                                              and right(a.metadata_json ->> '20',4) || substring(a.metadata_json ->> '20',4,2) || left(a.metadata_json ->> '20',2) >= '20210325'
+                                              and right(a.metadata_json ->> '20',4) || substring(a.metadata_json ->> '20',4,2) || left(a.metadata_json ->> '20',2) <= '20210326'
+                                            order by right(a.metadata_json ->> '20',4) || substring(a.metadata_json ->> '20',4,2) || left(a.metadata_json ->> '20',2)"""
+
+            xf = pd.DataFrame(df, columns=['cnpj', 'nota', 'serie', 'STATUS DIGITALIZACAO', 'STATUS INTEGRACAO',
+       'emissao', 'processamento', 'transportadora', 'protocolo', 'caixa',
+       'local', 'cod_origem', 'INDEXADO POR', 'ORDEM'])
+            text.delete('1.0', END)
+            text.insert(INSERT, xf)
+
+        def salvardiretorio():
+            try:
+                export_file_path = filedialog.asksaveasfilename(defaultextension='.csv')
+                df.to_csv(export_file_path, index=False, header=True)
+            except:
+                text.delete('1.0', END)
+                text.insert(INSERT, 'ERROR: \nData not defined')
     except:
         ...
 
@@ -308,6 +381,8 @@ try:
     my_button = Button(my_frame1, text="Salvar", command=salvardiretorio).place(relx=0.009, rely=0.750, height=24, width=87)
 
     my_button6 = Button(my_frame1, text="Select 1", command=select1).place(relx=0.110, rely=0.750, height=24, width=87)
+
+    my_button6 = Button(my_frame1, text="Select 2", command=testselect).place(relx=0.210, rely=0.750, height=24, width=87)
 
     my_button2 = Button(my_frame2, text="Select", command=select).place(relx=0.310, rely=0.810, height=24, width=87)
 
